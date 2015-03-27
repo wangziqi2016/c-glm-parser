@@ -152,7 +152,7 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     score += get_weight(h);
     
     h = hash_feature(2, 1, feature_buffer + 1);
-    score += get_width(h);
+    score += get_weight(h);
 }
 
 ///////////////////////////////////////////////////////////////////////
