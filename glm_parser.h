@@ -5,11 +5,13 @@
 #include <vector>
 #include <stdio.h>
 #include <assert.h>
+#include <time.h>
 
 #include <stdlib.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <string>
+#include <unordered_map>
 
 
 using namespace std;
@@ -35,13 +37,20 @@ using namespace std;
 #define STATE_FINISHED 0
 #define STATE_PROCESSING 1
 
+// Used by hash function to compute hash value on
+// machines with different word size
 #define _32BIT_HIGH_FIVE_BITS 0xF8000000
 #define _32BIT_LOW_BIT_NUM 27
 #define _64BIT_HIGH_FIVE_BITS 0xF800000000000000L
 #define _64BIT_LOW_BIT_NUM 59
 
-#define _32BIT_ONLY
+// Only 32 bit code into object file
+// Must be removed on 64 bit machine
+#ifndef _32BIT_ONLY
+    #define _32BIT_ONLY
+#endif
 
+// How many bits do we leave for type, dir and dist information
 #define TYPE_HASH_BIT 3
 
 struct Edge
@@ -102,5 +111,9 @@ struct Feature
 {
     string *word ;  
 };
+
+///////////////////// Function Dealaration
+
+float get_weight(unsigned long h);
 
 #endif

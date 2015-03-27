@@ -1,33 +1,37 @@
 # Project: glm_parser
-# Makefile created by Dev-C++ 4.9.9.2
+# Makefile created by Dev-C++ 5.10
 
-CPP  = g++.exe
-CC   = gcc.exe
-WINDRES = windres.exe
-RES  = 
-OBJ  = data_pool.o feature_generator.o $(RES)
-LINKOBJ  = data_pool.o feature_generator.o $(RES)
-LIBS =  -L"d:/Dev-Cpp/lib"  
-INCS =  -I"d:/Dev-Cpp/include" 
-CXXINCS =  -I"d:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"d:/Dev-Cpp/include/c++/3.4.2/backward"  -I"d:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"d:/Dev-Cpp/include/c++/3.4.2"  -I"d:/Dev-Cpp/include" 
-BIN  = glm_parser.exe
-CXXFLAGS = $(CXXINCS)  
-CFLAGS = $(INCS)  
-RM = rm -f
+CPP      = g++.exe
+CC       = gcc.exe
+WINDRES  = windres.exe
+OBJ      = data_pool.o feature_generator.o weight_vector.o logging.o
+LINKOBJ  = data_pool.o feature_generator.o weight_vector.o logging.o
+LIBS     = -L"d:/Dev-Cpp/MinGW64/lib32" -L"d:/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib32" -static-libgcc -m32 -pg
+INCS     = -I"d:/Dev-Cpp/MinGW64/include" -I"d:/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"d:/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include"
+CXXINCS  = -I"d:/Dev-Cpp/MinGW64/include" -I"d:/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"d:/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include" -I"d:/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.8.1/include/c++"
+BIN      = glm_parser.exe
+CXXFLAGS = $(CXXINCS) -m32 -pg -std=c++11 -std=gnu++11
+CFLAGS   = $(INCS) -m32 -pg -std=c++11 -std=gnu++11
+RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before glm_parser.exe all-after
-
+all: all-before $(BIN) all-after
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CPP) $(LINKOBJ) -o "glm_parser.exe" $(LIBS)
+	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
 
 data_pool.o: data_pool.c
 	$(CPP) -c data_pool.c -o data_pool.o $(CXXFLAGS)
 
 feature_generator.o: feature_generator.c
 	$(CPP) -c feature_generator.c -o feature_generator.o $(CXXFLAGS)
+
+weight_vector.o: weight_vector.c
+	$(CPP) -c weight_vector.c -o weight_vector.o $(CXXFLAGS)
+
+logging.o: logging.c
+	$(CPP) -c logging.c -o logging.o $(CXXFLAGS)
