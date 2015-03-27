@@ -26,6 +26,8 @@ static void load_data_from_file(SectionFile *sf_p)
     char line_buffer[LINE_BUFFER_MAX];
     char word_str[WORD_MAX];
     char pos_str[POS_MAX];
+    char five_gram_word_str[WORD_MAX];
+    
     int father_index;
     int state = STATE_FINISHED;
     
@@ -60,9 +62,15 @@ static void load_data_from_file(SectionFile *sf_p)
         {
             state = STATE_PROCESSING;
             
+            // Extract word, pos and father index
             sscanf(line_buffer, "%s %s %d", word_str, pos_str, &father_index);
+            // Extract five gram using format string hach
+            sscanf(line_buffer, "%5s", five_gram_word_str);
+            
             st.word_list.push_back(string(word_str));
             st.pos_list.push_back(string(pos_str));
+            st.five_gram_word_list.push_back(string(five_gram_word_str));
+            //DEBUG("%s#####", five_gram_word_str);
             st.gold_edge_list.push_back(Edge(current_index, father_index));
             
             current_index++;
@@ -265,9 +273,9 @@ static int get_sentence_count()
     return total;
 }
 
-int main()
+int test()
 {
-    vector<int> v = section_range(2, 21);
+    vector<int> v = section_range(0, 24);
     
     build_section_list(&v, string("D:/c-glm-parser/penn-wsj-deps/"));
     for(int i = 0;i < section_list.size();i++)
@@ -278,7 +286,7 @@ int main()
     }
     
     load_all_sections();
-    
+    DEBUG("Load, complete", 0);
     Context ctx;
     int count = 0;
     while(get_next_sentence(&ctx) != NULL) 

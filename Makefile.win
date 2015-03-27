@@ -5,8 +5,8 @@ CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
 RES  = 
-OBJ  = data_pool.o $(RES)
-LINKOBJ  = data_pool.o $(RES)
+OBJ  = data_pool.o feature_generator.o $(RES)
+LINKOBJ  = data_pool.o feature_generator.o $(RES)
 LIBS =  -L"d:/Dev-Cpp/lib"  
 INCS =  -I"d:/Dev-Cpp/include" 
 CXXINCS =  -I"d:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"d:/Dev-Cpp/include/c++/3.4.2/backward"  -I"d:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"d:/Dev-Cpp/include/c++/3.4.2"  -I"d:/Dev-Cpp/include" 
@@ -28,3 +28,6 @@ $(BIN): $(OBJ)
 
 data_pool.o: data_pool.c
 	$(CPP) -c data_pool.c -o data_pool.o $(CXXFLAGS)
+
+feature_generator.o: feature_generator.c
+	$(CPP) -c feature_generator.c -o feature_generator.o $(CXXFLAGS)

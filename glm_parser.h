@@ -35,6 +35,15 @@ using namespace std;
 #define STATE_FINISHED 0
 #define STATE_PROCESSING 1
 
+#define _32BIT_HIGH_FIVE_BITS 0xF8000000
+#define _32BIT_LOW_BIT_NUM 27
+#define _64BIT_HIGH_FIVE_BITS 0xF800000000000000L
+#define _64BIT_LOW_BIT_NUM 59
+
+#define _32BIT_ONLY
+
+#define TYPE_HASH_BIT 3
+
 struct Edge
 {
     int head_index;
@@ -51,6 +60,7 @@ struct Sentence
 {
     vector<string> word_list;
     vector<string> pos_list;
+    vector<string> five_gram_word_list;
 
     vector<Edge> gold_edge_list;
 };
@@ -86,6 +96,11 @@ struct Context
         total_sentence = 0;   
         start_time = end_time = 0.0;
     }
+};
+
+struct Feature
+{
+    string *word ;  
 };
 
 #endif
