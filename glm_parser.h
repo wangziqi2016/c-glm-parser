@@ -51,7 +51,7 @@ using namespace std;
 #endif
 
 // How many bits do we leave for type, dir and dist information
-#define HASH_MULTIPLIER 27
+#define HASH_MULTIPLIER 2897
 
 struct Edge
 {

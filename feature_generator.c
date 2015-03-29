@@ -170,12 +170,159 @@ float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
     return score;
 }
 
+//        xi-pos xb-pos xj-pos  type = 12
+//    type   num   offset
+//     12     3      0
+float get_in_between_feature_score(Sentence *sent, int head_index, int dep_index)
+{
+	unsigned long h;
+    register float score = 0.0;
+    int dir_dist; 
+	static const unsigned char *feature_buffer[3];
+	
+	string *pos_i = &sent->pos_list[head_index];
+    string *pos_j = &sent->pos_list[dep_index];
+	
+	int start_index, end_index;
+	if(head_index > dep_index) 
+	{
+		start_index = dep_index;
+		end_index = head_index;	
+	}
+	else
+	{
+		start_index = head_index;
+		end_index = dep_index;
+	}
+	
+	feature_buffer[0] = (unsigned char *)pos_i->c_str();
+	feature_buffer[2] = (unsigned char *)pos_j->c_str();
+	
+	for(int i = start_index;i < dep_index;i++)
+	{
+		string *pos_b = &sent->pos_list[i];
+		feature_buffer[1] = (unsigned char *)pos_b->c_str();
+		add_feature(12, 3, 0); 
+	}
+	
+	return score;
+} 
+//        +------------------------------------+
+//        | xi_pos, xi+1_pos, xj-1_pos, xj_pos | type = 13
+//        | xi_pos, xi+1_pos,         , xj_pos | type = 14
+//        | xi_pos,           xj-1_pos, xj_pos | type = 15
+//        | xi-1_pos, xi_pos, xj-1_pos, xj_pos | type = 16
+//        |           xi_pos, xj-1_pos, xj_pos | type = 17
+//        | xi-1_pos, xi_pos,           xj_pos | type = 18
+//        | xi_pos, xi+1_pos, xj_pos, xj+1_pos | type = 19
+//        | xi_pos,           xj_pos, xj+1_pos | type = 20
+//        | xi_pos, xi+1_pos, xj_pos           | type = 21
+//        | xi-1_pos, xi_pos, xj_pos, xj+1_pos | type = 22
+//        |           xi_pos, xj_pos, xj+1_pos | type = 23
+//        | xi-1_pos, xi_pos, xj_pos           | type = 24
+//        +------------------------------------+
+//
+float get_surrounding_feature_score(Sentence *sent, int head_index, int dep_index)
+{
+	unsigned long h;
+    register float score = 0.0;
+    int dir_dist; 
+	static const unsigned char *feature_buffer[4];
+	int largest_index = sent->word_list.size() - 1;
+	// When we are at the boundry of the sentence
+	static string *null_pos = new string("_N_");
+	
+	string *pos_i = &sent->pos_list[head_index];
+    string *pos_j = &sent->pos_list[dep_index];
+    string *pos_i_plus, *pos_i_minus, *pos_j_plus, *pos_j_minus;
+    if(head_index == largest_index) pos_i_plus = null_pos;
+    else pos_i_plus = &sent->pos_list[head_index + 1];
+    
+    if(head_index == 0) pos_i_minus = null_pos;
+    else pos_i_minus = &sent->word_list[head_index - 1];
+    
+    if(dep_index == largest_index) pos_j_plus = null_pos;
+    else pos_j_plus = &sent->pos_list[dep_index + 1];
+    
+    if(dep_index == 0) pos_j_minus = null_pos;
+    else pos_j_minus = &sent->word_list[dep_index - 1];
+    
+    feature_buffer[0] = (const unsigned char *)pos_i->c_str();
+    feature_buffer[1] = (const unsigned char *)pos_i_plus->c_str();
+    feature_buffer[2] = (const unsigned char *)pos_j_minus->c_str();
+    feature_buffer[3] = (const unsigned char *)pos_j->c_str();
+    
+	//i i+1 j-1 j
+    add_feature(13, 4, 0);
+    
+    feature_buffer[2] = (const unsigned char *)pos_j->c_str();
+    
+    // i i+1 j j
+    add_feature(14, 3, 0);
+    
+    feature_buffer[1] = (const unsigned char *)pos_i->c_str();
+    feature_buffer[2] = (const unsigned char *)pos_j_minus->c_str();
+    
+    // i i j-1 j
+    add_feature(15, 3, 1);
+    
+    feature_buffer[0] = (const unsigned char *)pos_i_minus->c_str();
+    
+    // i-1 i j-1 j
+    add_feature(16, 4, 0);
+    add_feature(17, 3, 1);
+    
+    feature_buffer[2] = (const unsigned char *)pos_j->c_str();
+    
+    // i-1 i j j
+	add_feature(18, 3, 0);
+	
+    feature_buffer[0] = (const unsigned char *)pos_i->c_str();
+    feature_buffer[1] = (const unsigned char *)pos_i_plus->c_str();
+    feature_buffer[3] = (const unsigned char *)pos_j_plus->c_str();
+    
+    // i i+1 j j+1
+    add_feature(19, 4, 0);
+    
+    feature_buffer[1] = (const unsigned char *)pos_i->c_str();
+    
+    // i i j j+1
+    add_feature(20, 3, 1);
+    
+    feature_buffer[1] = (const unsigned char *)pos_i_plus->c_str();
+    
+    // i i+1 j j+1
+    add_feature(21, 3, 0);
+    
+    feature_buffer[0] = (const unsigned char *)pos_i_minus->c_str();
+    feature_buffer[1] = (const unsigned char *)pos_i->c_str();
+    
+    // i-1 i j j+1
+    add_feature(22, 4, 0);
+    add_feature(23, 3, 1);
+    add_feature(24, 3, 0);
+    
+    return score;
+}
+
+float get_first_order_feature_score(Sentence *sent, int head_index, int dep_index)
+{
+	float score = 0.0;
+	
+	score += get_unigram_feature_score(sent, head_index, dep_index);
+	score += get_bigram_feature_score(sent, head_index, dep_index);	
+	score += get_in_between_feature_score(sent, head_index, dep_index);
+	score += get_surrounding_feature_score(sent, head_index, dep_index);
+	
+	return score;
+} 
+
 ///////////////////////////////////////////////////////////////////////
 // Test code
 
 int main()
 {
-    const char *test_array[] = {"issasdasd", "we23eqds", "Asdfrwed", "Tetdfdgwas"};
+    const char *test_array[] = {"issasdasd", "we23eqds", "Asdfrwed", "Tetdfdwa"};
     unsigned long h;
     clock_t start = clock();
     for(unsigned int i = 0;i < (unsigned int)1000000;i++)
