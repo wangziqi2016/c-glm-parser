@@ -43,10 +43,11 @@ static void load_data_from_file(SectionFile *sf_p)
     if(fp == NULL) ERROR("Open file %s fails!", filename_p->c_str());
 
     Sentence st;
-    // These two are implied but not in the file
+    // These are implied but not in the file
     st.word_list.push_back(ROOT_WORD);
     st.five_gram_word_list.push_back(ROOT_WORD);
     st.pos_list.push_back(ROOT_POS);
+    st.five_gram_flag.push_back(false);
     // Starts from 1 because ROOT is implied
     int current_index = 1;
     //DEBUG("%s", sf_p->filename.c_str());
@@ -64,6 +65,7 @@ static void load_data_from_file(SectionFile *sf_p)
             st.word_list.push_back(ROOT_WORD);
             st.five_gram_word_list.push_back(ROOT_WORD);
             st.pos_list.push_back(ROOT_POS);
+            st.five_gram_flag.push_back(false);
             current_index = 1;
         }
         else
@@ -292,9 +294,9 @@ static int get_sentence_count()
     return total;
 }
 
-int test()
+int main()
 {
-    vector<int> v = section_range(0, 24);
+    vector<int> v = section_range(1, 24);
     
     build_section_list(&v, string("D:/c-glm-parser/penn-wsj-deps/"));
     for(int i = 0;i < section_list.size();i++)
@@ -304,15 +306,24 @@ int test()
             //printf("\tFile name: %s\n", section_list[i].file_list[j].filename.c_str());   
     }
     
+    clock_t start = clock();
     load_all_sections();
-    DEBUG("Load, complete", 0);
+    clock_t end = clock();
+    DEBUG("Load complete, time = %ld", (long)(end - start));
     Context ctx;
     int count = 0;
-    while(get_next_sentence(&ctx) != NULL) 
+    Sentence *sent;
+    while((sent = get_next_sentence(&ctx)) != NULL) 
     {
+    	for(int i = 0;i < sent->word_list.size();i++)
+    	{
+    		DEBUG("%s %s %s %d", sent->word_list[i].c_str(), sent->pos_list[i].c_str(), 
+			                     sent->five_gram_word_list[i].c_str(), (int)sent->five_gram_flag[i]);
+		}
         //DEBUG("%d %d %d", ctx.current_section, ctx.current_file, 
         //                  ctx.current_sentence);
         //getchar();
+        getchar();
         count++;
     }
     

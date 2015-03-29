@@ -368,7 +368,7 @@ float get_first_order_feature_score(Sentence *sent, int head_index, int dep_inde
 ///////////////////////////////////////////////////////////////////////
 // Test code
 
-int main()
+int test()
 {
     const char *test_array[] = {"zxcvbnm", "asdfghjkl", "a", ""};
     unsigned long h;
