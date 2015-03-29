@@ -87,7 +87,7 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     unsigned long h;
     register float score = 0.0;
     int dir_dist; 
-	static const unsigned char *feature_buffer[2];
+	static const unsigned char *feature_buffer[4];
     
     string *word_i = &sent->word_list[head_index];
     string *pos_i = &sent->pos_list[head_index];
@@ -98,6 +98,8 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     
     feature_buffer[0] = (unsigned char *)word_i->c_str();
     feature_buffer[1] = (unsigned char *)pos_i->c_str();
+    feature_buffer[2] = (unsigned char *)word_j->c_str();
+    feature_buffer[3] = (unsigned char *)pos_j->c_str();
     
     add_feature(0, 2, 0);
     add_feature(1, 1, 0);
@@ -107,6 +109,27 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     add_feature(4, 1, 2);
     add_feature(5, 1, 3);
     
+    // Add five gram word feature
+    if(sent->five_gram_flag[head_index] == true)
+    {
+    	string *word_i_5 = &sent->five_gram_word_list[head_index];
+    	
+    	feature_buffer[0] = (unsigned char *)word_i_5->c_str();
+    	
+    	add_feature(0, 2, 0);
+    	add_feature(1, 1, 0);
+    }
+    
+    if(sent->five_gram_flag[dep_index] == true)
+    {
+    	string *word_j_5 = &sent->five_gram_word_list[dep_index];
+    	
+    	feature_buffer[2] = (unsigned char *)word_j_5->c_str();
+    	
+    	add_feature(3, 2, 2);
+    	add_feature(4, 1, 2);
+	}
+	
     return score;
 }
 
@@ -123,11 +146,11 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
 //              xi-word xi-pos xj-word xj-pos
 //        type    num     offset
 //         6       4        0
-//         7       3        1
+//         7       3        1   --> no word_i
 //         10      3        0
 //
 //              xi-word xi-pos xj-pos *
-//         9       3        0
+//         9       3        0  --> no word_j
 //         12      2        1
 //              
 //              xi-word xj-word xj-pos *
@@ -166,6 +189,31 @@ float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
     
     add_feature(8, 3, 0);
 	add_feature(11, 2, 0);    
+	
+	// Add five gram word feature
+	string *word_i_5 = &sent->five_gram_word_list[head_index];
+    string *word_j_5 = &sent->five_gram_word_list[dep_index];
+    
+    feature_buffer[0] = (unsigned char *)word_i_5->c_str();
+    feature_buffer[1] = (unsigned char *)pos_i->c_str();
+    feature_buffer[2] = (unsigned char *)word_j_5->c_str();
+    feature_buffer[3] = (unsigned char *)pos_j->c_str();
+
+    add_feature(6, 10, 0);
+    add_feature(10, 3, 0);
+	
+	// Only applies to word j five gram
+    if(sent->five_gram_flag[dep_index] == true) add_feature(7, 3, 1);
+    
+    feature_buffer[2] = (unsigned char *)pos_j->c_str();
+    
+    // Only applies to word i five gram
+    if(sent->five_gram_flag[head_index] == true) add_feature(9, 3, 0);
+    
+    feature_buffer[1] = (unsigned char *)word_j_5->c_str();
+    
+    add_feature(8, 3, 0);
+	add_feature(11, 2, 0);  
     
     return score;
 }
@@ -177,7 +225,7 @@ float get_in_between_feature_score(Sentence *sent, int head_index, int dep_index
 {
 	unsigned long h;
     register float score = 0.0;
-    int dir_dist; 
+    int dir_dist = get_dir_and_dist(head_index, dep_index); 
 	static const unsigned char *feature_buffer[3];
 	
 	string *pos_i = &sent->pos_list[head_index];
@@ -226,7 +274,7 @@ float get_surrounding_feature_score(Sentence *sent, int head_index, int dep_inde
 {
 	unsigned long h;
     register float score = 0.0;
-    int dir_dist; 
+    int dir_dist = get_dir_and_dist(head_index, dep_index); 
 	static const unsigned char *feature_buffer[4];
 	int largest_index = sent->word_list.size() - 1;
 	// When we are at the boundry of the sentence
@@ -322,12 +370,12 @@ float get_first_order_feature_score(Sentence *sent, int head_index, int dep_inde
 
 int main()
 {
-    const char *test_array[] = {"issasdasd", "we23eqds", "Asdfrwed", "Tetdfdwa"};
+    const char *test_array[] = {"zxcvbnm", "asdfghjkl", "a", ""};
     unsigned long h;
     clock_t start = clock();
     for(unsigned int i = 0;i < (unsigned int)1000000;i++)
     {
-        h = hash_feature(17, 4, (const unsigned char **)test_array);
+        h = hash_feature(17, 1, (const unsigned char **)test_array + 2);
     }
     clock_t end = clock();
     

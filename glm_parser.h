@@ -70,6 +70,7 @@ struct Sentence
     vector<string> word_list;
     vector<string> pos_list;
     vector<string> five_gram_word_list;
+    vector<bool> five_gram_flag;
 
     vector<Edge> gold_edge_list;
 };
@@ -124,7 +125,7 @@ inline float get_weight(unsigned long h)
 
 inline unsigned long pack_type_dir_dist(unsigned long type, unsigned long dir_dist)
 {
-	return (type << 4) ^ dir_dist;
+	return (type << 4) | dir_dist;
 }
 
 // Assumes: feature_buffer, score, h and dir_dist has already been defined

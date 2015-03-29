@@ -31,6 +31,12 @@ static void load_data_from_file(SectionFile *sf_p)
     int father_index;
     int state = STATE_FINISHED;
     
+    // These two are shared between all sentences (actually copied)
+    static const string ROOT_WORD = string("__ROOT__");
+    static const string ROOT_POS = string("ROOT");
+    // If five gram does not exist
+    static const string INVALID_WORD = string("__INV__");
+    
     string *filename_p = &sf_p->filename;
 
     FILE *fp = fopen(filename_p->c_str(), "r");
@@ -38,8 +44,9 @@ static void load_data_from_file(SectionFile *sf_p)
 
     Sentence st;
     // These two are implied but not in the file
-    st.word_list.push_back(string("__ROOT__"));
-    st.pos_list.push_back(string("ROOT"));
+    st.word_list.push_back(ROOT_WORD);
+    st.five_gram_word_list.push_back(ROOT_WORD);
+    st.pos_list.push_back(ROOT_POS);
     // Starts from 1 because ROOT is implied
     int current_index = 1;
     //DEBUG("%s", sf_p->filename.c_str());
@@ -54,8 +61,9 @@ static void load_data_from_file(SectionFile *sf_p)
             
             sf_p->sentence_list.push_back(st);
             st = Sentence();
-            st.word_list.push_back(string("__ROOT__"));
-            st.pos_list.push_back(string("ROOT"));
+            st.word_list.push_back(ROOT_WORD);
+            st.five_gram_word_list.push_back(ROOT_WORD);
+            st.pos_list.push_back(ROOT_POS);
             current_index = 1;
         }
         else
@@ -67,11 +75,22 @@ static void load_data_from_file(SectionFile *sf_p)
             // Extract five gram using format string hach
             sscanf(line_buffer, "%5s", five_gram_word_str);
             
+            // If five gram does not exist
+            if(strlen(five_gram_word_str) == strlen(word_str)) 
+			{
+				st.five_gram_flag.push_back(false);
+				st.five_gram_word_list.push_back(INVALID_WORD);
+			}
+            else
+			{
+			 	st.five_gram_flag.push_back(true);
+			 	st.five_gram_word_list.push_back(string(five_gram_word_str));
+			}
+            
             st.word_list.push_back(string(word_str));
             st.pos_list.push_back(string(pos_str));
-            st.five_gram_word_list.push_back(string(five_gram_word_str));
-            //DEBUG("%s#####", five_gram_word_str);
-            st.gold_edge_list.push_back(Edge(current_index, father_index));
+            
+            st.gold_edge_list.push_back(Edge(father_index, current_index));
             
             current_index++;
             
