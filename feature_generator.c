@@ -1,32 +1,34 @@
 
 #include "glm_parser.h"
 
-// Import from weight_vector module
-extern unordered_map<unsigned long, float> weight_vector;
 
 // Direction and distance is "packed" into a single value - 
 // bucketed distance is left shifted 1 bit, and ORed with direction
 static int get_dir_and_dist(int head_index, int dep_index)
 {
     // On 64-bit machine this is the same
-    int dist, dir;
+    unsigned long dist, dir;
     if(head_index > dep_index) 
     {
-        dir = (int)0x00000000;
+        dir = 0;
         dist = head_index - dep_index;   
     }
     else
     {
-        dir = (int)0x00000001;
+        dir = 1;
         dist = dep_index - head_index;
     }
     
+    // We bucket distance into 1 2 3 4 5 and 10
+    // But in order to achieve binary compactness, 10 is represented
+    // using 6, such that we only needs 4 bits to encode dist + dir
     if(dist > 5)
     {
         if(dist < 10) dist = 5;
-        else dist = 10;
+        else dist = 6; // dist = 10 or = 6 does not make any difference
     }
     
+    // It takes 4 LSBs to store dir + dist
     return (dist << 1) | dir;
 }
 
@@ -54,8 +56,6 @@ static unsigned long hash_feature_64bit(int type, int num, const char *str_pp[])
             h ^= (high_order >> _64BIT_LOW_BIT_NUM);
             h ^= (unsigned long)(*str_p);
             
-            h *= 0x1234567890ABCDEF;
-            
             str_p++;
         }
         
@@ -64,7 +64,7 @@ static unsigned long hash_feature_64bit(int type, int num, const char *str_pp[])
     
     // Add type into hashing
     h <<= TYPE_HASH_BIT;
-    h ^= (unsigned long)type;
+    h ^= (unsigned long)(type);
     
     return h;
 }
@@ -87,8 +87,6 @@ static unsigned long hash_feature_32bit(int type, int num, const char *str_pp[])
             h <<= 3;
             h ^= (high_order >> _32BIT_LOW_BIT_NUM);
             h ^= (unsigned long)(*str_p);
-            
-            h *= 0x12345678;
             
             str_p++;
         }
@@ -146,12 +144,70 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     feature_buffer[1] = pos_i->c_str();
     h = hash_feature(0, 2, feature_buffer);
     score += get_weight(h);
-    //h = hash_feature(, );
+    h = hash_feature((0 << 4) ^ dir_dist, 2, feature_buffer);
+    score += get_weight(h);
     
     h = hash_feature(1, 1, feature_buffer);
     score += get_weight(h);
+    h = hash_feature((1 << 4) ^ dir_dist, 1, feature_buffer);
+    score += get_weight(h);
     
     h = hash_feature(2, 1, feature_buffer + 1);
+    score += get_weight(h);
+    h = hash_feature((2 << 4) ^ dir_dist, 1, feature_buffer + 1);
+    score += get_weight(h);
+    
+    feature_buffer[0] = word_j->c_str();
+    feature_buffer[1] = pos_j->c_str();
+    h = hash_feature(3, 2, feature_buffer);
+    score += get_weight(h);
+    h = hash_feature((3 << 4) ^ dir_dist, 2, feature_buffer);
+    score += get_weight(h);
+    
+    h = hash_feature(4, 1, feature_buffer);
+    score += get_weight(h);
+    h = hash_feature((4 << 4) ^ dir_dist, 1, feature_buffer);
+    score += get_weight(h);
+    
+    h = hash_feature(5, 1, feature_buffer + 1);
+    score += get_weight(h);
+    h = hash_feature((5 << 4) ^ dir_dist, 1, feature_buffer + 1);
+    score += get_weight(h);
+    
+    return score;
+}
+
+//            +----------------------------------+
+//            | xi-word, xi-pos, xj-word, xj-pos | type = 6
+//            | xi-pos, xj-word, xj-pos          | type = 7
+//            | xi-word, xj-word, xj-pos         | type = 8
+//            | xi-word, xi-pos, xj-pos          | type = 9
+//            | xi-word, xi-pos, xj-word         | type = 10
+//            | xi-word, xj-word                 | type = 11
+//            | xi-pos, xj-pos                   | type = 12
+//            +----------------------------------+
+float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
+{
+    unsigned long h;
+    float score = 0.0;
+    int dir_dist; 
+	static const char *feature_buffer[4];
+    
+    string *word_i = &sent->word_list[head_index];
+    string *pos_i = &sent->pos_list[head_index];
+    string *word_j = &sent->word_list[dep_index];
+    string *pos_j = &sent->pos_list[dep_index];
+    
+    dir_dist = get_dir_and_dist(head_index, dep_index);
+    
+    feature_buffer[0] = word_i->c_str();
+    feature_buffer[1] = pos_i->c_str();
+    feature_buffer[2] = word_j->c_str();
+    feature_buffer[3] = pos_j->c_str();
+    
+    h = hash_feature(6, 4, feature_buffer);
+    score += get_weight(h);
+    h = hash_feature((6 << 4) ^ dir_dist, 4, feature_buffer);
     score += get_weight(h);
 }
 

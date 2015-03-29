@@ -113,7 +113,13 @@ struct Feature
 };
 
 ///////////////////// Function Dealaration
+extern unordered_map<unsigned long, float> weight_vector;
 
-float get_weight(unsigned long h);
+inline float get_weight(unsigned long h)
+{
+	// To save space, just falsefully return 0.0. Do not add new entry here
+    if(weight_vector.count(h) == 0) return 0.0;
+    else return weight_vector.at(h);
+}
 
 #endif
