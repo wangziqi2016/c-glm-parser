@@ -51,7 +51,7 @@ using namespace std;
 #endif
 
 // How many bits do we leave for type, dir and dist information
-#define TYPE_HASH_BIT 3
+#define HASH_MULTIPLIER 27
 
 struct Edge
 {
@@ -121,5 +121,17 @@ inline float get_weight(unsigned long h)
     if(weight_vector.count(h) == 0) return 0.0;
     else return weight_vector.at(h);
 }
+
+inline unsigned long pack_type_dir_dist(unsigned long type, unsigned long dir_dist)
+{
+	return (type << 4) ^ dir_dist;
+}
+
+// Assumes: feature_buffer, score, h and dir_dist has already been defined
+#define add_feature(type, num, offset) { \
+	h = hash_feature(type, num, feature_buffer + offset); \
+    score += get_weight(h); \
+    h = hash_feature(pack_type_dir_dist(type, dir_dist), num, feature_buffer + offset); \
+    score += h; }
 
 #endif

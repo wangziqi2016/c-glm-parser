@@ -37,56 +37,19 @@ static int get_dir_and_dist(int head_index, int dep_index)
 // http://www.cs.hmc.edu/~geoff/classes/hmc.cs070.200101/homework10/hashfuncs.html
 //////////////////////////////////////////////////////////////////////////////
 
-#ifndef _32BIT_ONLY
-
-static unsigned long hash_feature_64bit(int type, int num, const char *str_pp[])
+static unsigned long hash_feature(unsigned long type, int num, const unsigned char *str_pp[])
 {
-    int i = 0;
-    unsigned long h = (unsigned long)0x0000000000000000;
-    unsigned long high_order;
-    
-    while(num-- > 0)
-    {
-        const char *str_p = str_pp[i];
-        
-        while(*str_p != '\0')
-        {
-            high_order = h & _64BIT_HIGH_FIVE_BITS;
-            h <<= 3;
-            h ^= (high_order >> _64BIT_LOW_BIT_NUM);
-            h ^= (unsigned long)(*str_p);
-            
-            str_p++;
-        }
-        
-        i++;
-    }
-    
-    // Add type into hashing
-    h <<= TYPE_HASH_BIT;
-    h ^= (unsigned long)(type);
-    
-    return h;
-}
-
-#endif
-
-static unsigned long hash_feature_32bit(int type, int num, const char *str_pp[])
-{
-    int i = 0;
+	int i = 0;
     unsigned long h = (unsigned long)0x00000000;
     unsigned long high_order;
     
     while(num-- > 0)
     {
-        const char *str_p = str_pp[i];
+        const unsigned char *str_p = str_pp[i];
         
         while(*str_p != '\0')
         {
-            high_order = h & _32BIT_HIGH_FIVE_BITS;
-            h <<= 3;
-            h ^= (high_order >> _32BIT_LOW_BIT_NUM);
-            h ^= (unsigned long)(*str_p);
+            h = h * HASH_MULTIPLIER + (unsigned long)*str_p;
             
             str_p++;
         }
@@ -95,24 +58,9 @@ static unsigned long hash_feature_32bit(int type, int num, const char *str_pp[])
     }
     
     // Add type into hashing
-    h <<= TYPE_HASH_BIT;
-    h ^= (unsigned long)type;
+    h = h * HASH_MULTIPLIER + type;
     
     return h;
-}
-
-// Callback function to calculate features
-static unsigned long (*hash_feature)(int, int, const char *[]);
-
-static void determine_word_length()
-{
-    if(sizeof(unsigned long) == 4) hash_feature = hash_feature_32bit;
-    #ifndef _32BIT_ONLY
-    else if(sizeof(unsigned long) == 8) hash_feature = hash_feature_64bit;
-    #endif
-    else ERROR("Unable to determine word length = %d!", sizeof(unsigned long));
-    
-    return;
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -126,12 +74,20 @@ static void determine_word_length()
 //            | xj-word         | type = 4
 //            | xj-pos          | type = 5
 //            +-----------------+ 
+//              xi-word xi-pos xj-word xj-pos
+//        type    num   offset
+//         0       2      0
+//         1       1      0
+//         2       1      1
+//         3       2      2
+//         4       1      2
+//         5       1      3
 float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
 {
     unsigned long h;
-    float score = 0.0;
+    register float score = 0.0;
     int dir_dist; 
-	static const char *feature_buffer[2];
+	static const unsigned char *feature_buffer[2];
     
     string *word_i = &sent->word_list[head_index];
     string *pos_i = &sent->pos_list[head_index];
@@ -140,39 +96,16 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
     
     dir_dist = get_dir_and_dist(head_index, dep_index);
     
-    feature_buffer[0] = word_i->c_str();
-    feature_buffer[1] = pos_i->c_str();
-    h = hash_feature(0, 2, feature_buffer);
-    score += get_weight(h);
-    h = hash_feature((0 << 4) ^ dir_dist, 2, feature_buffer);
-    score += get_weight(h);
+    feature_buffer[0] = (unsigned char *)word_i->c_str();
+    feature_buffer[1] = (unsigned char *)pos_i->c_str();
     
-    h = hash_feature(1, 1, feature_buffer);
-    score += get_weight(h);
-    h = hash_feature((1 << 4) ^ dir_dist, 1, feature_buffer);
-    score += get_weight(h);
+    add_feature(0, 2, 0);
+    add_feature(1, 1, 0);
+    add_feature(2, 1, 1);
     
-    h = hash_feature(2, 1, feature_buffer + 1);
-    score += get_weight(h);
-    h = hash_feature((2 << 4) ^ dir_dist, 1, feature_buffer + 1);
-    score += get_weight(h);
-    
-    feature_buffer[0] = word_j->c_str();
-    feature_buffer[1] = pos_j->c_str();
-    h = hash_feature(3, 2, feature_buffer);
-    score += get_weight(h);
-    h = hash_feature((3 << 4) ^ dir_dist, 2, feature_buffer);
-    score += get_weight(h);
-    
-    h = hash_feature(4, 1, feature_buffer);
-    score += get_weight(h);
-    h = hash_feature((4 << 4) ^ dir_dist, 1, feature_buffer);
-    score += get_weight(h);
-    
-    h = hash_feature(5, 1, feature_buffer + 1);
-    score += get_weight(h);
-    h = hash_feature((5 << 4) ^ dir_dist, 1, feature_buffer + 1);
-    score += get_weight(h);
+    add_feature(3, 2, 2);
+    add_feature(4, 1, 2);
+    add_feature(5, 1, 3);
     
     return score;
 }
@@ -186,12 +119,27 @@ float get_unigram_feature_score(Sentence *sent, int head_index, int dep_index)
 //            | xi-word, xj-word                 | type = 11
 //            | xi-pos, xj-pos                   | type = 12
 //            +----------------------------------+
+// Memory layout:
+//              xi-word xi-pos xj-word xj-pos
+//        type    num     offset
+//         6       4        0
+//         7       3        1
+//         10      3        0
+//
+//              xi-word xi-pos xj-pos *
+//         9       3        0
+//         12      2        1
+//              
+//              xi-word xj-word xj-pos *
+//         8       3        0
+//         11      2        0
+
 float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
 {
     unsigned long h;
-    float score = 0.0;
+    register float score = 0.0;
     int dir_dist; 
-	static const char *feature_buffer[4];
+	static const unsigned char *feature_buffer[4];
     
     string *word_i = &sent->word_list[head_index];
     string *pos_i = &sent->pos_list[head_index];
@@ -200,31 +148,39 @@ float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
     
     dir_dist = get_dir_and_dist(head_index, dep_index);
     
-    feature_buffer[0] = word_i->c_str();
-    feature_buffer[1] = pos_i->c_str();
-    feature_buffer[2] = word_j->c_str();
-    feature_buffer[3] = pos_j->c_str();
+    feature_buffer[0] = (unsigned char *)word_i->c_str();
+    feature_buffer[1] = (unsigned char *)pos_i->c_str();
+    feature_buffer[2] = (unsigned char *)word_j->c_str();
+    feature_buffer[3] = (unsigned char *)pos_j->c_str();
     
-    h = hash_feature(6, 4, feature_buffer);
-    score += get_weight(h);
-    h = hash_feature((6 << 4) ^ dir_dist, 4, feature_buffer);
-    score += get_weight(h);
+    add_feature(6, 10, 0);
+    add_feature(7, 3, 1);
+    add_feature(10, 3, 0);
+    
+    feature_buffer[2] = (unsigned char *)pos_j->c_str();
+    
+    add_feature(9, 3, 0);
+    add_feature(12, 2, 1);
+    
+    feature_buffer[1] = (unsigned char *)word_j->c_str();
+    
+    add_feature(8, 3, 0);
+	add_feature(11, 2, 0);    
+    
+    return score;
 }
 
 ///////////////////////////////////////////////////////////////////////
 // Test code
 
-#include <time.h>
-
 int main()
 {
-    determine_word_length();
-    const char *test_array[] = {"Thissssssss", "issfersdf", "Asdfrwed", "Tetdfdgweasd"};
+    const char *test_array[] = {"issasdasd", "we23eqds", "Asdfrwed", "Tetdfdgwas"};
     unsigned long h;
     clock_t start = clock();
     for(unsigned int i = 0;i < (unsigned int)1000000;i++)
     {
-        h = hash_feature(17, 4, test_array);
+        h = hash_feature(17, 4, (const unsigned char **)test_array);
     }
     clock_t end = clock();
     
