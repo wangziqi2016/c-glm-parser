@@ -44,11 +44,23 @@ using namespace std;
 #define _64BIT_HIGH_FIVE_BITS 0xF800000000000000L
 #define _64BIT_LOW_BIT_NUM 59
 
-// Only 32 bit code into object file
-// Must be removed on 64 bit machine
-#ifndef _32BIT_ONLY
-    #define _32BIT_ONLY
-#endif
+// Initial eisner matrix size
+#define INIT_SENTENCE_LEN 100
+
+struct EisnerNode
+{
+	float score;
+	int mid_index;	
+};
+
+struct EdgeRecoveryNode
+{
+	int s, t, orientation, shape;	
+};
+
+typedef EisnerNode *P_EisnerNode;
+typedef EisnerNode **PP_EisnerNode;
+
 
 // How many bits do we leave for type, dir and dist information
 #define HASH_MULTIPLIER 2897
