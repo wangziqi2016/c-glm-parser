@@ -198,22 +198,49 @@ float get_bigram_feature_score(Sentence *sent, int head_index, int dep_index)
     feature_buffer[1] = (unsigned char *)pos_i->c_str();
     feature_buffer[2] = (unsigned char *)word_j_5->c_str();
     feature_buffer[3] = (unsigned char *)pos_j->c_str();
-
-    add_feature(6, 10, 0);
-    add_feature(10, 3, 0);
-	
-	// Only applies to word j five gram
-    if(sent->five_gram_flag[dep_index] == true) add_feature(7, 3, 1);
     
-    feature_buffer[2] = (unsigned char *)pos_j->c_str();
+    bool word_i_flag = sent->five_gram_flag[head_index];
+    bool word_j_flag = sent->five_gram_flag[dep_index];
     
-    // Only applies to word i five gram
-    if(sent->five_gram_flag[head_index] == true) add_feature(9, 3, 0);
+    if(word_i_flag == true && word_j_flag == true)
+    {
+    	add_feature(6, 10, 0);
+    	add_feature(10, 3, 0);
+    	add_feature(7, 3, 1);
     
-    feature_buffer[1] = (unsigned char *)word_j_5->c_str();
+    	feature_buffer[2] = (unsigned char *)pos_j->c_str();
+ 		add_feature(9, 3, 0);
     
-    add_feature(8, 3, 0);
-	add_feature(11, 2, 0);  
+    	feature_buffer[1] = (unsigned char *)word_j_5->c_str();
+    
+    	add_feature(8, 3, 0);
+		add_feature(11, 2, 0);  
+	}
+	else if(word_i_flag == true)
+	{
+		add_feature(6, 10, 0);
+    	add_feature(10, 3, 0);
+    
+    	feature_buffer[2] = (unsigned char *)pos_j->c_str();
+ 		add_feature(9, 3, 0);
+    
+    	feature_buffer[1] = (unsigned char *)word_j_5->c_str();
+    
+    	add_feature(8, 3, 0);
+		add_feature(11, 2, 0);  
+	}
+	else if(word_j_flag == true)
+    {
+    	add_feature(6, 10, 0);
+    	add_feature(10, 3, 0);
+    	add_feature(7, 3, 1);
+    
+    	feature_buffer[2] = (unsigned char *)pos_j->c_str();
+    	feature_buffer[1] = (unsigned char *)word_j_5->c_str();
+    
+    	add_feature(8, 3, 0);
+		add_feature(11, 2, 0);  
+	}
     
     return score;
 }
