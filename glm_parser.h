@@ -46,6 +46,7 @@ using namespace std;
 
 // Initial eisner matrix size
 #define INIT_SENTENCE_LEN 100
+#define MAX_EDGE_LIST_SIZE 200
 
 struct EisnerNode
 {
@@ -55,7 +56,12 @@ struct EisnerNode
 
 struct EdgeRecoveryNode
 {
-	int s, t, orientation, shape;	
+	int s, t, orientation, shape;
+	
+	EdgeRecoveryNode(int ps, int pt, int porientation, int pshape)
+	{
+		s = ps; t = pt; orientation = porientation; shape = pshape;
+	}
 };
 
 typedef EisnerNode *P_EisnerNode;
@@ -75,6 +81,8 @@ struct Edge
         head_index = hi; 
         dep_index = di;
     }
+    
+    Edge() {}
 };
 
 struct Sentence
@@ -126,6 +134,10 @@ struct Feature
 };
 
 ///////////////////// Function Dealaration
+
+// Used by parser to register callback
+float get_first_order_feature_score(Sentence *sent, int head_index, int dep_index);
+
 extern unordered_map<unsigned long, float> weight_vector;
 
 inline float get_weight(unsigned long h)
